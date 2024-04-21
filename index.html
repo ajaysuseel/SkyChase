@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="ctx" style="border: 1px solid #000000"></canvas>
+
+<script>
+var ctx = document.getElementById("ctx").getContext("2d");
+
+// Dynamically set canvas width and height to fill the screen
+ctx.canvas.width = window.innerWidth;
+ctx.canvas.height = window.innerHeight;
+
+var bgImg = new Image();
+bgImg.src = "/bg.jpeg";
+
+var personImg = new Image();
+personImg.src = "/person.jpeg";
+
+var obstacleImg = new Image();
+obstacleImg.src = "/obstacle.png";
+
+var stoneImg = new Image();
+stoneImg.src = "/stone.jpeg";
+
+var bgX = 0; // Initial position of the background
+var personX = 0; // Initial position of the person
+var personY = ctx.canvas.height - 120; // Person's position on the y-axis
+var personWidth = 60;
+var personHeight = 60;
+var bgSpeed = 2; // Background scrolling speed
+var personSpeed = 3; // Person's movement speed
+var jumping = false; // Flag to track if the person is jumping
+var jumpHeight = ctx.canvas.height / 2 - 120; // Set jump height relative to canvas height
+var jumpSpeed = 5; // Jump speed
+var jumpDistance = 0; // Distance covered during jump
+var maxJumpDistance = 120; // Maximum distance to jump
+var minObstacleDistance = 150; // Minimum distance between obstacles
+
+var obstacles = []; // Array to store obstacles
+var stones = []; // Array to store falling stones
+
+var elapsedTime = 0; // Elapsed time since the game started
+var stoneGenerationRate = 0.005; // Initial stone generation rate
+
+function drawBackground() {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.drawImage(bgImg, bgX, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.drawImage(bgImg, bgX + ctx.canvas.width - 1, 0, ctx.canvas.width, ctx.canvas.height);
+}
+
+function updateBackground() {
+    bgX -= bgSpeed;
+    if (bgX <= -ctx.canvas.width) {
+        bgX = 0;
+    }
+}
+
+function updatePerson() {
+    if (jumping) {
+        // Update person's y-coordinate during jump
+        personY -= jumpSpeed;
+        jumpDistance += jumpSpeed;
+        
+        // Check if max jump height or max distance reached
+        if (jumpDistance >= maxJumpDistance || personY >= ctx.canvas.height - personHeight) {
+            jumping = false;
+        }
+    } else {
+        // Update person's y-coordinate when not jumping
+        if (personY < ctx.canvas.height - personHeight) {
+            personY += jumpSpeed; // Fall back down
+        } else {
+            jumpDistance = 0; // Reset jump distance when person lands
+        }
+    }
+}
+
+function drawPerson() {
+    ctx.drawImage(personImg, personX, personY, personWidth, personHeight);
+}
+
+function jump(event) {
+    if (!jumping && event.clientX > ctx.canvas.width / 2) {
+        jumping = true;
+        jumpDistance = 0; // Reset jump distance
+        // Move the person forward a short distance with each jump
+        personX += 10;
+    }
+}
+
+function updateObstacles() {
+    // Update obstacle positions
+    for (var i = 0; i < obstacles.length; i++) {
+        obstacles[i].x -= bgSpeed; // Move obstacles along with background
+    }
+    
+    // Remove obstacles that have moved off-screen
+    obstacles = obstacles.filter(function(obstacle) {
+        return obstacle.x + obstacle.width > 0;
+    });
+    
+    // Generate new obstacles from the right side
+    if (Math.random() < 0.01) { // Adjust the probability to control obstacle generation frequency
+        var obstacleX = ctx.canvas.width; // Start obstacle at the right edge of the canvas
+        var obstacleY = ctx.canvas.height - 50; // Align obstacle with the bottom of the canvas
+        
+        var obstacle = {
+            x: obstacleX,
+            y: obstacleY,
+            width: personWidth, // Adjust obstacle width to match player size
+            height: personHeight // Adjust obstacle height to match player size
+        };
+        obstacles.push(obstacle);
+    }
+    
+    // Generate new falling stones from the top
+    if (Math.random() < stoneGenerationRate) { // Adjust the probability to control stone generation frequency
+        var stoneX = Math.random() * ctx.canvas.width; // Random x-coordinate within canvas width
+        var stoneY = 0; // Start stone at the top of the canvas
+        
+        var stone = {
+            x: stoneX,
+            y: stoneY,
+            width: 20, // Adjust stone width
+            height: 20, // Adjust stone height
+            speed: Math.random() * 5 + 2 // Random falling speed between 2 and 7
+        };
+        stones.push(stone);
+    }
+}
+
+function drawObstacles() {
+    // Draw obstacles on the canvas
+    for (var i = 0; i < obstacles.length; i++) {
+        ctx.drawImage(obstacleImg, obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
+    }
+    
+    // Draw falling stones on the canvas
+    for (var i = 0; i < stones.length; i++) {
+        ctx.drawImage(stoneImg, stones[i].x, stones[i].y, stones[i].width, stones[i].height);
+    }
+}
+
+function checkCollision() {
+    for (var i = 0; i < obstacles.length; i++) {
+        var obstacle = obstacles[i];
+        if (
+            personX < obstacle.x + obstacle.width &&
+            personX + personWidth > obstacle.x &&
+            personY < obstacle.y + obstacle.height &&
+            personY + personHeight > obstacle.y
+        ) {
+            // Collision detected with obstacle, game over
+            gameOver();
+            return;
+        }
+    }
+    
+    for (var i = 0; i < stones.length; i++) {
+        var stone = stones[i];
+        if (
+            personX < stone.x + stone.width &&
+            personX + personWidth > stone.x &&
+            personY < stone.y + stone.height &&
+            personY + personHeight > stone.y
+        ) {
+            // Collision detected with stone, game over
+            gameOver();
+            return;
+        }
+    }
+}
+
+function gameOver() {
+    // Display game over message
+    alert("Game Over!");
+    // Restart the game
+    restartGame();
+}
+
+function restartGame() {
+    // Reset all game variables to their initial values
+    bgX = 0;
+    personX = 0;
+    personY = ctx.canvas.height - 120; // Adjust starting position
+    jumping = false;
+    jumpDistance = 0;
+    obstacles = [];
+    stones = [];
+    elapsedTime = 0; // Reset elapsed time
+    stoneGenerationRate = 0.005; // Reset stone generation rate
+}
+
+function updateStones() {
+    // Update stone positions
+    for (var i = 0; i < stones.length; i++) {
+        stones[i].y += stones[i].speed; // Move stones downwards
+    }
+
+    // Remove stones that have moved off-screen
+    stones = stones.filter(function(stone) {
+        return stone.y < ctx.canvas.height;
+    });
+
+    // Increase stone generation rate based on elapsed time
+    elapsedTime += 1 / 60; // Assuming the game runs at 60 frames per second
+    if (elapsedTime > 10 && stoneGenerationRate < 0.01) {
+        // Increase stone generation rate after 10 seconds
+        stoneGenerationRate += 0.001;
+    }
+}
+
+function animate() {
+    drawBackground();
+    updateBackground();
+    updatePerson();
+    drawPerson();
+    updateObstacles();
+    updateStones(); // Update falling stones
+    drawObstacles();
+    checkCollision(); // Check for collision
+    requestAnimationFrame(animate);
+}
+
+bgImg.onload = animate;
+document.addEventListener("click", jump); // Listen for clicks on the canvas
+
+</script>
+</body>
+</html>
