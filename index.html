@@ -46,7 +46,7 @@ var personY = ctx.canvas.height - 120; // Person's position on the y-axis
 var personWidth = 60;
 var personHeight = 60;
 var bgSpeed = 2; // Background scrolling speed
-var personSpeed = 3; // Person's movement speed
+var personSpeed = 1.5; // Person's movement speed (adjusted)
 var jumping = false; // Flag to track if the person is jumping
 var jumpHeight = ctx.canvas.height / 2 - 120; // Set jump height relative to canvas height
 var jumpSpeed = 5; // Jump speed
@@ -59,6 +59,8 @@ var stones = []; // Array to store falling stones
 
 var elapsedTime = 0; // Elapsed time since the game started
 var stoneGenerationRate = 0.005; // Initial stone generation rate
+
+var restartDelay = 2000; // Delay in milliseconds before allowing restart
 
 function drawBackground() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -96,6 +98,13 @@ function updatePerson() {
                 jumpSpeed = -jumpSpeed; // Reverse jump speed to bounce down
             }
         }
+        
+        // Check if person reaches the right end or left end of the canvas
+        if (personX <= -personWidth) {
+            personX = ctx.canvas.width; // Set person's x-coordinate to right end
+        } else if (personX >= ctx.canvas.width) {
+            personX = -personWidth; // Set person's x-coordinate to left end
+        }
     }
 }
 
@@ -104,11 +113,19 @@ function drawPerson() {
 }
 
 function jump(event) {
-    if (!jumping && event.clientX > ctx.canvas.width / 2) {
+    // Determine the direction based on tap position
+    var tapX = event.clientX;
+    if (tapX < ctx.canvas.width / 2) {
+        // Move left and jump
+        personX -= 20; // Adjust movement to the left
+    } else {
+        // Move right and jump
+        personX += 20; // Adjust movement to the right
+    }
+    
+    if (!jumping) {
         jumping = true;
         jumpDistance = 0; // Reset jump distance
-        // Move the person forward a short distance with each jump
-        personX += 10;
     }
 }
 
@@ -196,23 +213,53 @@ function checkCollision() {
 }
 
 function gameOver() {
-    // Display game over message
-    alert("Game Over!");
-    // Restart the game
-    restartGame();
+    // Clear the canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    // Set font properties
+    ctx.font = "70px Arial";
+    ctx.fillStyle = "orange";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    // Display "Game Over" message in the center of the canvas
+    ctx.fillText("Game Over", ctx.canvas.width / 2, ctx.canvas.height / 2);
+    
+    // Draw restart button
+    ctx.fillStyle = "orange";
+    ctx.fillRect(ctx.canvas.width / 2 - 100, ctx.canvas.height / 2 + 50, 200, 50);
+    ctx.fillStyle = "white";
+    ctx.fillText("Restart", ctx.canvas.width / 2, ctx.canvas.height / 2 + 80);
+    
+    // Listen for click to restart the game
+    document.addEventListener("click", restartGame);
 }
 
-function restartGame() {
-    // Reset all game variables to their initial values
-    bgX = 0;
-    personX = 0;
-    personY = ctx.canvas.height - 120; // Adjust starting position
-    jumping = false;
-    jumpDistance = 0;
-    obstacles = [];
-    stones = [];
-    elapsedTime = 0; // Reset elapsed time
-    stoneGenerationRate = 0.005; // Reset stone generation rate
+function restartGame(event) {
+    // Check if the click is within the restart button
+    if (
+        event.clientX >= ctx.canvas.width / 2 - 100 &&
+        event.clientX <= ctx.canvas.width / 2 + 100 &&
+        event.clientY >= ctx.canvas.height / 2 + 50 &&
+        event.clientY <= ctx.canvas.height / 2 + 100
+    ) {
+        // Remove the click event listener
+        document.removeEventListener("click", restartGame);
+
+        // Reset all game variables to their initial values
+        bgX = 0;
+        personX = 0;
+        personY = ctx.canvas.height - 120; // Adjust starting position
+        jumping = false;
+        jumpDistance = 0;
+        obstacles = [];
+        stones = [];
+        elapsedTime = 0; // Reset elapsed time
+        stoneGenerationRate = 0.005; // Reset stone generation rate
+
+        // Delay before restarting the game
+        setTimeout(animate, restartDelay);
+    }
 }
 
 function updateStones() {
