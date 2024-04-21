@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game</title>
+    <title>Hestia</title>
     <link rel="icon" type="image/png" href="./assets/favicon.jpeg">
-    <style>
+    <style> 
         body, html {
             margin: 0;
             padding: 0;
@@ -45,8 +45,8 @@ var personX = 0; // Initial position of the person
 var personY = ctx.canvas.height - 120; // Person's position on the y-axis
 var personWidth = 60;
 var personHeight = 60;
-var bgSpeed = 2; // Background scrolling speed
-var personSpeed = 1.5; // Person's movement speed (adjusted)
+var bgSpeed = 2; // Background scrolling speed (fixed)
+var personSpeed = 1.5; // Person's movement speed (fixed)
 var jumping = false; // Flag to track if the person is jumping
 var jumpHeight = ctx.canvas.height / 2 - 120; // Set jump height relative to canvas height
 var jumpSpeed = 5; // Jump speed
@@ -57,6 +57,7 @@ var minObstacleDistance = 150; // Minimum distance between obstacles
 var obstacles = []; // Array to store obstacles
 var stones = []; // Array to store falling stones
 
+var score = 0; // Initialize score
 var elapsedTime = 0; // Elapsed time since the game started
 var stoneGenerationRate = 0.005; // Initial stone generation rate
 
@@ -69,7 +70,7 @@ function drawBackground() {
 }
 
 function updateBackground() {
-    bgX -= bgSpeed;
+    bgX -= bgSpeed; // Fixed background scrolling speed
     if (bgX <= -ctx.canvas.width) {
         bgX = 0;
     }
@@ -86,25 +87,15 @@ function updatePerson() {
             jumping = false;
         }
     } else {
-        // Update person's y-coordinate when not jumping
+        // Update person's y-coordinate during fall
         if (personY < ctx.canvas.height - personHeight) {
-            personY += jumpSpeed; // Fall back down
-        } else {
-            jumpDistance = 0; // Reset jump distance when person lands
-            
-            // Bounce off the top bounds of the screen
-            if (personY < 0) {
-                personY = 0; // Set person's y-coordinate to 0
-                jumpSpeed = -jumpSpeed; // Reverse jump speed to bounce down
-            }
+            personY += jumpSpeed; // Fall with the same speed as jump
         }
-        
-        // Check if person reaches the right end or left end of the canvas
-        if (personX <= -personWidth) {
-            personX = ctx.canvas.width; // Set person's x-coordinate to right end
-        } else if (personX >= ctx.canvas.width) {
-            personX = -personWidth; // Set person's x-coordinate to left end
-        }
+    }
+    
+    // Check if the person reaches the right end, then move it to the left
+    if (personX >= ctx.canvas.width) {
+        personX = 0;
     }
 }
 
@@ -212,6 +203,17 @@ function checkCollision() {
     }
 }
 
+function updateScore() {
+    score++; // Increment score
+}
+
+function displayScore() {
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "left";
+    ctx.fillText("Score: " + score, 10, 30); // Display score on the canvas
+}
+
 function gameOver() {
     // Clear the canvas
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -224,42 +226,9 @@ function gameOver() {
     
     // Display "Game Over" message in the center of the canvas
     ctx.fillText("Game Over", ctx.canvas.width / 2, ctx.canvas.height / 2);
-    
-    // Draw restart button
-    ctx.fillStyle = "orange";
-    ctx.fillRect(ctx.canvas.width / 2 - 100, ctx.canvas.height / 2 + 50, 200, 50);
-    ctx.fillStyle = "white";
-    ctx.fillText("Restart", ctx.canvas.width / 2, ctx.canvas.height / 2 + 80);
-    
-    // Listen for click to restart the game
-    document.addEventListener("click", restartGame);
-}
 
-function restartGame(event) {
-    // Check if the click is within the restart button
-    if (
-        event.clientX >= ctx.canvas.width / 2 - 100 &&
-        event.clientX <= ctx.canvas.width / 2 + 100 &&
-        event.clientY >= ctx.canvas.height / 2 + 50 &&
-        event.clientY <= ctx.canvas.height / 2 + 100
-    ) {
-        // Remove the click event listener
-        document.removeEventListener("click", restartGame);
-
-        // Reset all game variables to their initial values
-        bgX = 0;
-        personX = 0;
-        personY = ctx.canvas.height - 120; // Adjust starting position
-        jumping = false;
-        jumpDistance = 0;
-        obstacles = [];
-        stones = [];
-        elapsedTime = 0; // Reset elapsed time
-        stoneGenerationRate = 0.005; // Reset stone generation rate
-
-        // Delay before restarting the game
-        setTimeout(animate, restartDelay);
-    }
+    // Reset score
+    score = 0;
 }
 
 function updateStones() {
@@ -290,7 +259,18 @@ function animate() {
     updateStones(); // Update falling stones
     drawObstacles();
     checkCollision(); // Check for collision
-    requestAnimationFrame(animate);
+    updateScore(); // Update score
+    displayScore(); // Display score
+
+    // Check if score reaches 100
+    if (score >= 6200) {
+        ctx.font = "70px Arial"; // Set font size and family
+        ctx.fillStyle = "#f9a602"; // Set text color to yellow
+        ctx.textAlign = "center"; // Center-align text
+        ctx.fillText("WELCOME TO HESTIA '24", ctx.canvas.width / 2, ctx.canvas.height / 2); // Display text in the center of the canvas
+    } else {
+        requestAnimationFrame(animate); // Continue the game loop
+    }
 }
 
 bgImg.onload = animate;
