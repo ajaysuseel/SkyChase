@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game</title>
+    <link rel="icon" type="image/png" href="./assets/favicon.jpeg">
     <style>
         body, html {
             margin: 0;
@@ -88,6 +89,12 @@ function updatePerson() {
             personY += jumpSpeed; // Fall back down
         } else {
             jumpDistance = 0; // Reset jump distance when person lands
+            
+            // Bounce off the top bounds of the screen
+            if (personY < 0) {
+                personY = 0; // Set person's y-coordinate to 0
+                jumpSpeed = -jumpSpeed; // Reverse jump speed to bounce down
+            }
         }
     }
 }
